@@ -27,7 +27,7 @@ public class XToysDetectColors {
     private final static ExecutorService executorService = Executors.newFixedThreadPool(1);
 
     public static void main(String[] args) {
-        if(args.length > 2) {
+        if(args.length > 1) {
             var webhookId = args[0];
             final List<Color> colors = new ArrayList<>();
             for(int i = 1;i<args.length; i++){
