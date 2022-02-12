@@ -6,7 +6,7 @@ java 17
 
 # Usage:
 
-java XToysDetectColors.java <webhookid> <color1> <color2>
+java XToysDetectColors.java webhookid color1 color2
   
 Example:
   
