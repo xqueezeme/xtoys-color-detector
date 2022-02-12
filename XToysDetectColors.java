@@ -1,5 +1,7 @@
 
 import java.awt.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -37,12 +39,11 @@ public class XToysDetectColors {
                     final List<Integer> data = countMatchingPixels(r, colors);
                     executorService.submit(() -> {
                         try {
-                            webhook(webhookId, data);
+                            webhook(webhookId, colors, data);
                         } catch (IOException e) {
                             e.printStackTrace();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
-                            executorService.shutdownNow();
                         }
                     });
                     sleep(UPDATE_RATE);
@@ -60,13 +61,17 @@ public class XToysDetectColors {
         }
     }
 
-    private static void webhook(String webhookId, List<Integer> data) throws IOException, InterruptedException {
+    private static void webhook(String webhookId, List<Color> colors, List<Integer> data) throws IOException, InterruptedException {
         var client = HttpClient.newHttpClient();
+        var colorText = colors.stream().map(color ->
+                "#"+Integer.toHexString(color.getRGB()).substring(2).toUpperCase())
+                .collect(Collectors.joining(","));
         final StringBuilder url = new StringBuilder("https://xtoys.app/webhook?id=" + webhookId + "&action=colors");
-        for(int i = 0; i<data.size(); i++) {
-            url.append("&color").append(i + 1).append("=").append(data.get(i));
-        }
+        var percentages = data.stream().map(c -> c + "").collect(Collectors.joining(","));
+        url.append("&allcolorpercentages=").append(percentages);
+        url.append("&allcolors=").append(URLEncoder.encode(colorText, StandardCharsets.UTF_8.toString()));
         URI uri = URI.create(url.toString());
+        System.out.println(url);
         var request = HttpRequest.newBuilder(uri)
                 .header("Accept", "application/json")
                 .build();
