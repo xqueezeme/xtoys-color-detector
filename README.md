@@ -6,8 +6,12 @@ java 17
 
 # Usage:
 
-java XToysDetectColors.java webhookid color1 color2
-  
+java XToysDetectColors.java webhookid color1 color2 ... color10
+
+You can provide how many colors you want, as long as it more than one.
+
+These will be sent to the webhook as keynames: color1, color2, color3, ...
+
 Example:
   
 java XToysDetectColors.java D2COE76wV65S #000000 #ff0000
