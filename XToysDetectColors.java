@@ -75,7 +75,6 @@ public class XToysDetectColors {
         url.append("&allcolorpercentages=").append(percentages);
         url.append("&allcolors=").append(URLEncoder.encode(colorText, StandardCharsets.UTF_8.toString()));
         URI uri = URI.create(url.toString());
-        System.out.println(url);
         var request = HttpRequest.newBuilder(uri)
                 .header("Accept", "application/json")
                 .build();
@@ -106,7 +105,7 @@ public class XToysDetectColors {
 
         var colorPercentages = colorCounts.stream().map(count -> (int) ((double) count / totalPixels * 100)).collect(Collectors.toList());
         var percentages = colorPercentages.stream().map(c -> c + "%").collect(Collectors.joining(", "));
-        System.out.println(LocalTime.now().toString() + " Resolution: " + image.getWidth() + "x" + image.getHeight() + ", Percentages: " + percentages + "\nPress CTRL+C to stop.");
+        System.out.println(LocalTime.now().toString() + " Resolution: " + image.getWidth() + "x" + image.getHeight() + ", Percentages: " + percentages + " , Press CTRL+C to stop.");
 
         return colorPercentages;
     }
