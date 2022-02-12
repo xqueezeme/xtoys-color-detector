@@ -11,6 +11,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -34,18 +35,21 @@ public class XToysDetectColors {
             }
             try {
                 Robot r = new Robot();
-
+                List<Integer> previousData = null;
                 while (true) {
                     final List<Integer> data = countMatchingPixels(r, colors);
-                    executorService.submit(() -> {
-                        try {
-                            webhook(webhookId, colors, data);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    });
+                    if(!Objects.equals(data, previousData)) {
+                        previousData = data;
+                        executorService.submit(() -> {
+                            try {
+                                webhook(webhookId, colors, data);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        });
+                    }
                     sleep(UPDATE_RATE);
                 }
             } catch (InterruptedException e) {
