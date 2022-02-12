@@ -136,7 +136,7 @@ public class XToysDetectColors {
             }
         });
         pane.add(jTextField, c);
-        JLabel headerLabel2 = new JLabel("Color accuracy: ");
+        JLabel headerLabel2 = new JLabel("Color accuracy (" + MAX_DISTANCE + ") : ");
         headerLabel2.setToolTipText("Tweak this number for the color accuracy: Lower = more accurate, High = less accurate. Default value is 5000");
         c.gridx = 0;
         c.gridwidth = 1;
@@ -154,6 +154,7 @@ public class XToysDetectColors {
             @Override
             public void stateChanged(ChangeEvent e) {
                 MAX_DISTANCE = slider.getValue();
+                headerLabel2.setText("Color accuracy (" + MAX_DISTANCE + ") : ");
             }
         });
         pane.add(slider, c);
@@ -304,7 +305,7 @@ public class XToysDetectColors {
 
             var colorPercentages = colorCounts.stream().map(count -> (int) ((double) count / totalPixels * 100)).collect(Collectors.toList());
             var percentages = colorPercentages.stream().map(c -> c + "%").collect(Collectors.joining(", "));
-            System.out.println(LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_TIME) + " Resolution: " + (int) allScreenBounds.getWidth() + "x" + (int) allScreenBounds.getHeight() + ", Percentages: " + percentages + " ; Press CTRL+C to stop.");
+            System.out.println(LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_TIME) + " Resolution: " + (int) allScreenBounds.getWidth() + "x" + (int) allScreenBounds.getHeight() + ", Percentages: " + percentages);
 
             return colorPercentages;
         }
