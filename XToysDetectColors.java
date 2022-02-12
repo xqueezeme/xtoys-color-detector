@@ -2,6 +2,8 @@
 import java.awt.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -12,19 +14,14 @@ import java.net.http.HttpResponse;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static java.lang.Thread.sleep;
 
 public class XToysDetectColors {
     //Tweak this number for the color accuracy: Lower = more accurate, High = less accurate
     private final static int MAX_DISTANCE = 5000;
-    private final static int UPDATE_RATE = 1000;
-
-    private final static ExecutorService executorService = Executors.newFixedThreadPool(1);
+    private final static int UPDATE_RATE_SECONDS = 1;
 
     public static void main(String[] args) {
         if(args.length > 1) {
@@ -34,29 +31,27 @@ public class XToysDetectColors {
                 colors.add(Color.decode(args[i]));
             }
             try {
-                Robot r = new Robot();
-                List<Integer> previousData = null;
-                while (true) {
-                    final List<Integer> data = countMatchingPixels(r, colors);
-                    if(!Objects.equals(data, previousData)) {
-                        previousData = data;
-                        executorService.submit(() -> {
+                Robot robot = new Robot();
+                final List<Integer>[] previousData = new List[]{null};
+                ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+                Runnable toRun = () -> {
+                    try {
+                        final List<Integer> data = countMatchingPixels(robot, colors);
+                        if(!Objects.equals(data, previousData[0])) {
+                            previousData[0] = data;
                             try {
                                 webhook(webhookId, colors, data);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            } catch (InterruptedException e) {
+                            } catch (IOException | InterruptedException e) {
                                 e.printStackTrace();
                             }
-                        });
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                    sleep(UPDATE_RATE);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (AWTException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
+                 };
+                ScheduledFuture<?> handle = scheduler.scheduleAtFixedRate(toRun, 1, UPDATE_RATE_SECONDS, TimeUnit.SECONDS);
+            } catch ( AWTException e) {
                 e.printStackTrace();
             }
         } else {
@@ -68,7 +63,7 @@ public class XToysDetectColors {
     private static void webhook(String webhookId, List<Color> colors, List<Integer> data) throws IOException, InterruptedException {
         var client = HttpClient.newHttpClient();
         var colorText = colors.stream().map(color ->
-                "#"+Integer.toHexString(color.getRGB()).substring(2).toUpperCase())
+                        "#"+Integer.toHexString(color.getRGB()).substring(2).toUpperCase())
                 .collect(Collectors.joining(","));
         final StringBuilder url = new StringBuilder("https://xtoys.app/webhook?id=" + webhookId + "&action=colors");
         var percentages = data.stream().map(c -> c + "").collect(Collectors.joining(","));
@@ -78,10 +73,9 @@ public class XToysDetectColors {
         var request = HttpRequest.newBuilder(uri)
                 .header("Accept", "application/json")
                 .build();
-        int statusCode = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(HttpResponse::statusCode)
-                .join();
-        System.out.println(statusCode+ " : " + url);
+                .thenAccept(code -> System.out.println(code+ " : " + url));
     }
 
     public static List<Integer> countMatchingPixels(Robot r, List<Color> colors) throws IOException {
@@ -105,7 +99,7 @@ public class XToysDetectColors {
 
         var colorPercentages = colorCounts.stream().map(count -> (int) ((double) count / totalPixels * 100)).collect(Collectors.toList());
         var percentages = colorPercentages.stream().map(c -> c + "%").collect(Collectors.joining(", "));
-        System.out.println(LocalTime.now().toString() + " Resolution: " + image.getWidth() + "x" + image.getHeight() + ", Percentages: " + percentages + " , Press CTRL+C to stop.");
+        System.out.println(LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_TIME) + " Resolution: " + image.getWidth() + "x" + image.getHeight() + ", Percentages: " + percentages + " ; Press CTRL+C to stop.");
 
         return colorPercentages;
     }
