@@ -60,7 +60,7 @@ public class XToysDetectColors {
                 e.printStackTrace();
             }
         } else {
-            System.out.println("Please provide the following arguments. You can add how many colors you want, but you'll need to configure the script to handle them: <webhookid> <color1> <color2>\n" +
+            System.out.println("Please provide the following arguments. You can add how many colors you want: <webhookid> <color1> <color2>\n" +
                     "Example: java XToysDetectColors.java D2COE76wV65S #000000 #eb4132");
         }
     }
