@@ -1,4 +1,3 @@
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -40,7 +39,7 @@ public class XToysDetectColors {
     List<Integer> data = new ArrayList<>();
 
     public void start() {
-        frame = new JFrame("XToysDetectColors");
+        frame = new JFrame("XToys Detect Colors");
         loadProperties();
         frame.getContentPane().setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
