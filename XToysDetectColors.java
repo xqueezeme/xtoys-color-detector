@@ -344,7 +344,7 @@ public class XToysDetectColors {
             int brightnessPercentage = (int) (brightness / totalPixels / 255 * 100);
             var colorPercentages = colorCounts.stream().map(count -> (int) ((double) count / totalPixels * 100)).collect(Collectors.toList());
             var percentages = colorPercentages.stream().map(c -> c + "%").collect(Collectors.joining(", "));
-            System.out.println(LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_TIME) + " Resolution: " + (int) allScreenBounds.getWidth() + "x" + (int) allScreenBounds.getHeight() + ", Percentages: " + percentages + ", Brightness: " + brightnessPercentage + "%");
+            System.out.println(LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_TIME) + " Resolution: " + (int) allScreenBounds.getWidth() + "x" + (int) allScreenBounds.getHeight() + (!colorPercentages.isEmpty() ? ", Percentages: " + percentages : "") + ", Brightness: " + brightnessPercentage + "%");
             var result = new Result();
             result.brightness = brightnessPercentage;
             result.colorPercentages = colorPercentages;
