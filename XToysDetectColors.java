@@ -181,6 +181,9 @@ public class XToysDetectColors {
                 final int colorIndexFinal = colorIndex - 1;
                 changeButton.setForeground(getContrastColor(color));
                 changeButton.setBackground(color);
+                changeButton.setOpaque(true);
+                changeButton.setBorderPainted(false);
+
                 changeButton.addActionListener(new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
@@ -204,7 +207,8 @@ public class XToysDetectColors {
                 });
                 deleteButton.setForeground(getContrastColor(color));
                 deleteButton.setBackground(color);
-
+                deleteButton.setOpaque(true);
+                deleteButton.setBorderPainted(false);
                 jPanel.add(deleteButton, c);
 
                 pane.add(jPanel, c);
