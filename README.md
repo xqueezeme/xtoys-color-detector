@@ -7,7 +7,7 @@ https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html
 
 # Usage:
 
-Start the application like this in commandline:
+Start the application with java in the command line:
 java XToysDetectColors.java
 
 ![Screenshot](screenshot.png)
