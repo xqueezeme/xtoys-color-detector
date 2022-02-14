@@ -6,6 +6,8 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
@@ -25,8 +27,9 @@ import java.util.stream.IntStream;
 public class XToysDetectColors {
     //Tweak this number for the color accuracy: Lower = more accurate, High = less accurate
     private int MAX_DISTANCE = 5000;
-    private final static int UPDATE_RATE_SECONDS = 1;
+    private final static int UPDATE_RATE_MILLIS = 1000;
     private JLabel brightnessLabel;
+    private final static int DECIMAL_PLACES = 2;
 
     public static void main(String[] args) {
         XToysDetectColors xToysDetectColors = new XToysDetectColors();
@@ -37,8 +40,8 @@ public class XToysDetectColors {
     String webhookId = "";
     List<Color> colors = new ArrayList<>();
     JPanel pane = new JPanel(new GridBagLayout());
-    List<Integer> data = new ArrayList<>();
-    int brightness = 0;
+    List<Double> data = new ArrayList<>();
+    Integer brightness = 0;
 
     public void start() {
         frame = new JFrame("XToys Detect Colors");
@@ -78,7 +81,7 @@ public class XToysDetectColors {
                 e.printStackTrace();
             }
         };
-        ScheduledFuture<?> handle = scheduler.scheduleAtFixedRate(toRun, 1, UPDATE_RATE_SECONDS, TimeUnit.SECONDS);
+        ScheduledFuture<?> handle = scheduler.scheduleAtFixedRate(toRun, 1, UPDATE_RATE_MILLIS, TimeUnit.MILLISECONDS);
         frame.revalidate();
     }
 
@@ -89,8 +92,8 @@ public class XToysDetectColors {
         for (int i = 0; i < colorLabels.size(); i++) {
             String percentText = "";
             if (data.size() > i) {
-                final Integer integer = data.get(i);
-                percentText = " " + integer + "%";
+                final Double percent = data.get(i);
+                percentText = " " + percent + "%";
             }
             String hexCode = "";
             if (colors.size() > i) {
@@ -203,8 +206,10 @@ public class XToysDetectColors {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         Color newColor = JColorChooser.showDialog(changeButton, "Choose a color", color);
-                        colors.set(colorIndexFinal, newColor);
-                        updateUI();
+                        if(newColor != null) {
+                            colors.set(colorIndexFinal, newColor);
+                            updateUI();
+                        }
 
                     }
                 });
@@ -278,7 +283,7 @@ public class XToysDetectColors {
                     .collect(Collectors.joining(","));
             final StringBuilder url = new StringBuilder("https://xtoys.app/webhook?id=" + webhookId + "&action=colors");
             var percentages = result.colorPercentages.stream().map(c -> c + "").collect(Collectors.joining(","));
-            url.append("&allcolorpercentages=").append(percentages);
+            url.append("&allcolorpercentages=").append(URLEncoder.encode(percentages, StandardCharsets.UTF_8.toString()));
             url.append("&allcolors=").append(URLEncoder.encode(colorText, StandardCharsets.UTF_8.toString()));
             url.append("&brightness=").append(URLEncoder.encode(String.valueOf(result.brightness), StandardCharsets.UTF_8.toString()));
             URI uri = URI.create(url.toString());
@@ -294,15 +299,15 @@ public class XToysDetectColors {
     }
 
     private static class Result {
-        private List<Integer> colorPercentages;
-        private int brightness;
+        private List<Double> colorPercentages;
+        private Integer brightness;
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Result result = (Result) o;
-            return brightness == result.brightness && Objects.equals(colorPercentages, result.colorPercentages);
+            return Objects.equals(colorPercentages, result.colorPercentages) && Objects.equals(brightness, result.brightness);
         }
 
         @Override
@@ -312,43 +317,43 @@ public class XToysDetectColors {
     }
 
     public Result countMatchingPixels(List<Color> colors) throws IOException, AWTException {
-            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-            GraphicsDevice[] screens = ge.getScreenDevices();
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice[] screens = ge.getScreenDevices();
 
-            Rectangle allScreenBounds = new Rectangle();
-            final List<Integer> colorCounts = colors != null ? new ArrayList<>(IntStream.range(0, colors.size())
-                    .mapToObj((i) -> 0).collect(Collectors.toList())): Collections.emptyList();
-            int brightness = 0;
-            for (GraphicsDevice screen : screens) {
-                Rectangle rectangle = screen.getDefaultConfiguration().getBounds();
-                allScreenBounds.width += rectangle.width;
-                allScreenBounds.height = Math.max(allScreenBounds.height, rectangle.height);
-                BufferedImage image = new Robot().createScreenCapture(rectangle);
-                for (int x = 0; x < image.getWidth(); x++) {
-                    for (int y = 0; y < image.getHeight(); y++) {
-                        var rgb = image.getRGB(x, y);
-                        var color = new Color(rgb);
-                        brightness += brightness(color);
-                        if(colors != null && !colors.isEmpty()) {
-                            for (int i = 0; i < colors.size(); i++) {
-                                if (similarTo(colors.get(i), color)) {
-                                    colorCounts.set(i, colorCounts.get(i) + 1);
-                                }
+        Rectangle allScreenBounds = new Rectangle();
+        final List<Integer> colorCounts = colors != null ? new ArrayList<>(IntStream.range(0, colors.size())
+                .mapToObj((i) -> 0).collect(Collectors.toList())): Collections.emptyList();
+        int brightness = 0;
+        for (GraphicsDevice screen : screens) {
+            Rectangle rectangle = screen.getDefaultConfiguration().getBounds();
+            allScreenBounds.width += rectangle.width;
+            allScreenBounds.height = Math.max(allScreenBounds.height, rectangle.height);
+            BufferedImage image = new Robot().createScreenCapture(rectangle);
+            for (int x = 0; x < image.getWidth(); x++) {
+                for (int y = 0; y < image.getHeight(); y++) {
+                    var rgb = image.getRGB(x, y);
+                    var color = new Color(rgb);
+                    brightness += brightness(color);
+                    if(colors != null && !colors.isEmpty()) {
+                        for (int i = 0; i < colors.size(); i++) {
+                            if (similarTo(colors.get(i), color)) {
+                                colorCounts.set(i, colorCounts.get(i) + 1);
                             }
                         }
                     }
                 }
             }
+        }
 
-            var totalPixels = allScreenBounds.getWidth() * allScreenBounds.getHeight();
-            int brightnessPercentage = (int) (brightness / totalPixels / 255 * 100);
-            var colorPercentages = colorCounts.stream().map(count -> (int) ((double) count / totalPixels * 100)).collect(Collectors.toList());
-            var percentages = colorPercentages.stream().map(c -> c + "%").collect(Collectors.joining(", "));
-            System.out.println(LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_TIME) + " Resolution: " + (int) allScreenBounds.getWidth() + "x" + (int) allScreenBounds.getHeight() + (!colorPercentages.isEmpty() ? ", Percentages: " + percentages : "") + ", Brightness: " + brightnessPercentage + "%");
-            var result = new Result();
-            result.brightness = brightnessPercentage;
-            result.colorPercentages = colorPercentages;
-            return result;
+        var totalPixels = allScreenBounds.getWidth() * allScreenBounds.getHeight();
+        var brightnessPercentage = (int) (brightness / totalPixels / 255 * 100);
+        var colorPercentages = colorCounts.stream().map(count -> round((double) count / totalPixels * 100, DECIMAL_PLACES)).collect(Collectors.toList());
+        var percentages = colorPercentages.stream().map(c -> c + "%").collect(Collectors.joining(", "));
+        System.out.println(LocalTime.now().truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_TIME) + " Resolution: " + (int) allScreenBounds.getWidth() + "x" + (int) allScreenBounds.getHeight() + (!colorPercentages.isEmpty() ? ", Percentages: " + percentages : "") + ", Brightness: " + brightnessPercentage + "%");
+        var result = new Result();
+        result.brightness = brightnessPercentage;
+        result.colorPercentages = colorPercentages;
+        return result;
     }
 
     int brightness(Color color) {
@@ -409,5 +414,13 @@ public class XToysDetectColors {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        BigDecimal bd = BigDecimal.valueOf(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 }
